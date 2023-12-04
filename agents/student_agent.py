@@ -1,7 +1,7 @@
 # Student agent: Add your own agent here
 from agents.agent import Agent
 from store import register_agent
-#import sys
+import sys
 import numpy as np
 from copy import deepcopy
 import time
@@ -48,14 +48,23 @@ class StudentAgent(Agent):
         time_taken = time.time() - start_time
 
         steps_taken = 0
-        dist_bt_adversary = self.distance_to_adversary(my_pos, adv_pos)
 
-        possible_moves = self.possible_moves(chess_board, my_pos, adv_pos, steps_taken, max_step)
+        best_pos = self.bfs(chess_board, my_pos, adv_pos, steps_taken, max_step)
+        directions = self.wall_dir(chess_board, my_pos, adv_pos)
+
+        x1, y1 = best_pos
+        for direction in directions.copy():
+            if chess_board[x1, y1, direction]:
+                directions.remove(direction)
+
+        if len(directions) == 0:
+            for direction in self.dir_map.values():
+                if not chess_board[x1, y1, direction]:
+                    directions.add(direction)
 
         print("My AI's turn took ", time_taken, "seconds.")
 
-        # dummy return
-        return my_pos, self.dir_map["u"]
+        return best_pos, directions.pop()
 
     # Heuristic function 1
     # We are going to try to trap the opponent by moving closer to them
@@ -84,15 +93,35 @@ class StudentAgent(Agent):
         result = h2 + 0.7*h1
         return result
 
+    def wall_dir(self, chess_board, my_pos, adv_pos):
+        x1, y1 = my_pos
+        x2, y2 = adv_pos
+        wall_dir = set()
+        # adversary is on top
+        if x1-x2 > 0:
+            wall_dir.add(0)
+        # adversary is on bottom
+        elif x1-x2 < 0:
+            wall_dir.add(2)
+        # adversary is on right
+        if y1-y2 < 0:
+            wall_dir.add(1)
+        # adversary is on left
+        elif y1-y2 > 0:
+            wall_dir.add(3)
+
+        return wall_dir
+
     def bfs(self, chess_board, my_pos, adv_pos, steps_taken, max_step):
         frontier = self.find_frontier(chess_board, my_pos, adv_pos)
         steps_taken += 1
-        visited = []
         while steps_taken <= max_step:
             new_pos = frontier.get()[1]
             new_frontier = self.find_frontier(chess_board, new_pos, adv_pos)
-            # Condition to check if I have reached to a desired box, ie the opponent is in an adjacent box
+            while not new_frontier.empty():
+                frontier.put(new_frontier.get())
             steps_taken += 1
+        return frontier.get()[1]
 
     def find_frontier(self, chess_board, my_pos, adv_pos):
         frontier = PriorityQueue()
@@ -111,7 +140,6 @@ class StudentAgent(Agent):
                 elif direction == 3 and (x1,y1-1) != adv_pos:
                     value = self.eval(chess_board, (x1, y1-1), adv_pos)
                     frontier.put((value, (x1, y1-1)))
-
         return frontier
 
 
