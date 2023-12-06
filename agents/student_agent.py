@@ -24,6 +24,7 @@ class StudentAgent(Agent):
             "d": 2,
             "l": 3,
         }
+        self.autoplay = True
 
     def step(self, chess_board, my_pos, adv_pos, max_step):
         """
@@ -50,7 +51,7 @@ class StudentAgent(Agent):
         steps_taken = 0
 
         best_pos = self.bfs(chess_board, my_pos, adv_pos, steps_taken, max_step)
-        directions = self.wall_dir(chess_board, my_pos, adv_pos)
+        directions = self.wall_dir(chess_board, best_pos, adv_pos)
 
         x1, y1 = best_pos
         for direction in directions.copy():
@@ -90,7 +91,7 @@ class StudentAgent(Agent):
     def eval(self, chess_board, my_pos, adv_pos):
         h1 = self.distance_to_adversary(my_pos, adv_pos)
         h2 = self.num_walls(chess_board, my_pos)
-        result = h2 + 0.7*h1
+        result = h2 + 0.4*h1
         return result
 
     def wall_dir(self, chess_board, my_pos, adv_pos):
@@ -115,7 +116,7 @@ class StudentAgent(Agent):
     def bfs(self, chess_board, my_pos, adv_pos, steps_taken, max_step):
         frontier = self.find_frontier(chess_board, my_pos, adv_pos)
         steps_taken += 1
-        while steps_taken <= max_step:
+        while steps_taken < max_step:
             new_pos = frontier.get()[1]
             new_frontier = self.find_frontier(chess_board, new_pos, adv_pos)
             while not new_frontier.empty():
